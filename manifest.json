@@ -1,8 +1,14 @@
 {
   "manifest_version": 3,
   "name": "LinkedIn Peer Finder",
-  "version": "1.0.9",
+  "version": "1.1.0",
   "description": "Find LinkedIn people who share a job title and company.",
+  "background": {
+    "service_worker": "background.js"
+  },
+  "host_permissions": [
+    "<all_urls>"
+  ],
   "content_scripts": [
     {
       "matches": [

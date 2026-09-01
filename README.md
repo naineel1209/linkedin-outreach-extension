@@ -4,6 +4,14 @@ LinkedIn Peer Finder adds a People search button to LinkedIn job-detail pages.
 
 The extension also supports a selected job in LinkedIn search results.
 
+The extension adds **Copy Company Name - Job link** beside the job actions.
+
+This button copies the company name and job link as tab-separated values.
+
+For Easy Apply jobs, it copies the canonical LinkedIn job URL.
+
+For external application jobs, it copies the final external application URL.
+
 The extension searches for the current job title and company name.
 
 The extension does not send messages or connection requests.
@@ -34,6 +42,20 @@ It copies a LinkedIn People search URL only when LinkedIn hides that profile URL
 
 Chrome opens a new LinkedIn People search tab.
 
+## Copy a company name and job link
+
+1. Open a LinkedIn job-detail page or select a job in job search results.
+2. Select **Copy Company Name - Job link**.
+3. Paste into Google Sheets.
+
+Google Sheets places the company name in one column.
+
+Google Sheets places the job link in the next column.
+
+The button shows **Copied** after a successful copy operation.
+
+The button shows **Copy failed** when it cannot get the application URL or clipboard access.
+
 ## Copy a profile name and URL
 
 1. Open a LinkedIn People search results page.
@@ -58,10 +80,12 @@ The extension does not send connection requests.
 
 ## Check the extension
 
-The button appears beside **Apply** when LinkedIn shows that action.
+The job buttons appear beside **Apply** when LinkedIn shows that action.
 
-The button appears beside **Save** when Apply is unavailable.
+The job buttons appear beside **Save** when Apply is unavailable.
 
-The button appears below the job header when neither action exists.
+The job buttons appear below the job header when neither action exists.
 
-The button needs both a job title and a company name.
+The People search button needs both a job title and a company name.
+
+The copy button needs a company name and a selected job.

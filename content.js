@@ -11,10 +11,14 @@
 
   const BUTTON_ATTRIBUTE = 'data-linkedin-peer-finder-button';
   const BUTTON_SELECTOR = `[${BUTTON_ATTRIBUTE}]`;
+  const COPY_BUTTON_ATTRIBUTE = 'data-linkedin-copy-company-job-link-button';
+  const COPY_BUTTON_SELECTOR = `[${COPY_BUTTON_ATTRIBUTE}]`;
   const WRAPPER_ATTRIBUTE = 'data-linkedin-peer-finder-action';
   const WRAPPER_SELECTOR = `[${WRAPPER_ATTRIBUTE}]`;
   const BUTTON_ID = 'linkedin-peer-finder-button';
+  const COPY_BUTTON_ID = 'linkedin-copy-company-job-link-button';
   const STATUS_ATTRIBUTE = 'data-linkedin-peer-finder-status';
+  const RESOLVE_APPLY_URL_MESSAGE = 'linkedin-peer-finder-resolve-apply-url';
   const RENDER_DELAY_MS = 150;
   const MAX_RENDER_DELAY_MS = 1000;
 
@@ -247,12 +251,16 @@
     }) || null;
   }
 
-  function findJobAction() {
+  function findApplyAction() {
     return findAction('Apply', [
       'button.jobs-apply-button',
       'button[data-control-name*="jobdetails_topcard_inapply"]',
       'a[role="button"][data-control-name*="jobdetails_topcard_inapply"]'
-    ]) || findAction('Save', [
+    ]);
+  }
+
+  function findJobAction() {
+    return findApplyAction() || findAction('Save', [
       'button.jobs-save-button',
       'button[data-control-name*="jobdetails_topcard_save"]',
       'a[role="button"][data-control-name*="jobdetails_topcard_save"]'
@@ -262,11 +270,12 @@
   function removeButtons() {
     document.querySelectorAll(WRAPPER_SELECTOR).forEach((wrapper) => wrapper.remove());
     document.querySelectorAll(BUTTON_SELECTOR).forEach((button) => button.remove());
+    document.querySelectorAll(COPY_BUTTON_SELECTOR).forEach((button) => button.remove());
   }
 
-  function hasCurrentButton() {
-    const buttons = [...document.querySelectorAll(BUTTON_SELECTOR)];
-    const currentButton = document.getElementById(BUTTON_ID) || buttons[0];
+  function getSingleButton(selector, id) {
+    const buttons = [...document.querySelectorAll(selector)];
+    const currentButton = document.getElementById(id) || buttons[0];
 
     buttons.forEach((button) => {
       if (button !== currentButton) {
@@ -274,7 +283,34 @@
       }
     });
 
-    return Boolean(currentButton);
+    return currentButton || null;
+  }
+
+  function hasCurrentButtons(title, company, jobId) {
+    const peerButton = getSingleButton(BUTTON_SELECTOR, BUTTON_ID);
+    const copyButton = getSingleButton(COPY_BUTTON_SELECTOR, COPY_BUTTON_ID);
+    const needsPeerButton = Boolean(title && company);
+    const needsCopyButton = Boolean(company && jobId);
+    const peerMatches = !needsPeerButton || (
+      peerButton?.dataset.peerFinderTitle === title &&
+      peerButton?.dataset.peerFinderCompany === company
+    );
+    const copyMatches = !needsCopyButton || (
+      copyButton?.dataset.copyCompany === company &&
+      copyButton?.dataset.copyJobId === jobId
+    );
+
+    if (
+      peerMatches &&
+      copyMatches &&
+      Boolean(peerButton) === needsPeerButton &&
+      Boolean(copyButton) === needsCopyButton
+    ) {
+      return true;
+    }
+
+    removeButtons();
+    return false;
   }
 
   function createButton(title, company) {
@@ -296,11 +332,229 @@
     return button;
   }
 
-  function createActionWrapper(button) {
+  function isEasyApplyAction(action) {
+    if (!action) {
+      return false;
+    }
+
+    const label = normalizeText(action.getAttribute('aria-label'));
+    const text = normalizeText(action.textContent);
+
+    return /\beasy\s+apply\b/i.test(label) || /\beasy\s+apply\b/i.test(text);
+  }
+
+  function getExternalUrl(value) {
+    if (!value) {
+      return '';
+    }
+
+    try {
+      const url = new URL(value, window.location.origin);
+
+      if (!/^https?:$/.test(url.protocol)) {
+        return '';
+      }
+
+      const isLinkedIn = /(^|\.)linkedin\.com$/i.test(url.hostname);
+
+      if (!isLinkedIn) {
+        return url.href;
+      }
+
+      for (const parameter of ['url', 'redirect', 'redirectUrl', 'targetUrl', 'destination']) {
+        const destination = url.searchParams.get(parameter);
+        const externalUrl = getExternalUrl(destination);
+
+        if (externalUrl) {
+          return externalUrl;
+        }
+      }
+    } catch {
+      // Ignore invalid URLs in LinkedIn markup.
+    }
+
+    return '';
+  }
+
+  function getResolvableApplyUrl(value) {
+    if (!value) {
+      return '';
+    }
+
+    try {
+      const url = new URL(value, window.location.origin);
+
+      if (!/^https?:$/.test(url.protocol)) {
+        return '';
+      }
+
+      if (!/(^|\.)linkedin\.com$/i.test(url.hostname)) {
+        return url.href;
+      }
+
+      for (const parameter of ['url', 'redirect', 'redirectUrl', 'targetUrl', 'destination']) {
+        if (getExternalUrl(url.searchParams.get(parameter))) {
+          return url.href;
+        }
+      }
+    } catch {
+      // Ignore invalid URLs in LinkedIn markup.
+    }
+
+    return '';
+  }
+
+  function getUrlValues(element) {
+    if (!element) {
+      return [];
+    }
+
+    const values = [];
+
+    for (const attribute of [...element.attributes]) {
+      if (/^(href|data-(?:apply-)?url|data-(?:job-apply|redirect|target|external)-url|data-destination)$/i.test(attribute.name)) {
+        values.push(attribute.value);
+      }
+    }
+
+    return values;
+  }
+
+  function getExternalApplyUrl(applyAction) {
+    const candidates = [];
+    let element = applyAction;
+
+    for (let level = 0; element && level < 4; level += 1) {
+      candidates.push(element);
+      element = element.parentElement;
+    }
+
+    document.querySelectorAll(
+      'a[href], [data-apply-url], [data-job-apply-url], [data-redirect-url], [data-target-url], [data-external-url]'
+    ).forEach((candidate) => {
+      const label = normalizeText(candidate.getAttribute('aria-label'));
+      const text = normalizeText(candidate.textContent);
+      const hasApplyUrl = candidate.hasAttribute('data-apply-url') ||
+        candidate.hasAttribute('data-job-apply-url') ||
+        candidate.hasAttribute('data-external-url');
+
+      if (hasApplyUrl || /\b(apply|application|continue)\b/i.test(`${label} ${text}`)) {
+        candidates.push(candidate);
+      }
+    });
+
+    for (const candidate of candidates) {
+      for (const value of getUrlValues(candidate)) {
+        const externalUrl = getResolvableApplyUrl(value);
+
+        if (externalUrl) {
+          return externalUrl;
+        }
+      }
+    }
+
+    return '';
+  }
+
+  function getCanonicalJobUrl(jobId) {
+    return `https://www.linkedin.com/jobs/view/${encodeURIComponent(jobId)}/`;
+  }
+
+  function resolveExternalApplyUrl(url) {
+    return new Promise((resolve, reject) => {
+      if (typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) {
+        reject(new Error('The extension background worker is unavailable.'));
+        return;
+      }
+
+      chrome.runtime.sendMessage({ type: RESOLVE_APPLY_URL_MESSAGE, url }, (response) => {
+        if (chrome.runtime.lastError || !response?.ok || !response.url) {
+          reject(new Error('The application URL could not be resolved.'));
+          return;
+        }
+
+        resolve(response.url);
+      });
+    });
+  }
+
+  async function copyText(value) {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+      return;
+    }
+
+    const textArea = document.createElement('textarea');
+
+    textArea.value = value;
+    textArea.setAttribute('readonly', '');
+    textArea.style.position = 'fixed';
+    textArea.style.opacity = '0';
+    document.body.append(textArea);
+    textArea.select();
+
+    if (!document.execCommand('copy')) {
+      textArea.remove();
+      throw new Error('Clipboard access failed.');
+    }
+
+    textArea.remove();
+  }
+
+  function createCopyButton(company, jobId) {
+    const button = document.createElement('button');
+    const originalText = 'Copy Company Name - Job link';
+
+    async function copyCompanyAndJobLink() {
+      try {
+        if (getCurrentJobId() !== jobId) {
+          throw new Error('The selected job changed.');
+        }
+
+        const applyAction = findApplyAction();
+        let jobUrl;
+
+        if (isEasyApplyAction(applyAction)) {
+          jobUrl = getCanonicalJobUrl(jobId);
+        } else {
+          const externalApplyUrl = getExternalApplyUrl(applyAction);
+
+          if (!externalApplyUrl) {
+            throw new Error('No external application URL is available.');
+          }
+
+          jobUrl = await resolveExternalApplyUrl(externalApplyUrl);
+        }
+
+        await copyText(`${company}\t${jobUrl}`);
+        button.textContent = 'Copied';
+      } catch {
+        button.textContent = 'Copy failed';
+      }
+
+      window.setTimeout(() => {
+        button.textContent = originalText;
+      }, 1500);
+    }
+
+    button.type = 'button';
+    button.id = COPY_BUTTON_ID;
+    button.setAttribute(COPY_BUTTON_ATTRIBUTE, '');
+    button.dataset.copyCompany = company;
+    button.dataset.copyJobId = jobId;
+    button.textContent = originalText;
+    button.setAttribute('aria-label', 'Copy company name and job link');
+    button.setAttribute('title', 'Copy company name and job link as tab-separated values');
+    button.addEventListener('click', copyCompanyAndJobLink);
+
+    return button;
+  }
+
+  function createActionWrapper(buttons) {
     const wrapper = document.createElement('div');
 
     wrapper.setAttribute(WRAPPER_ATTRIBUTE, '');
-    wrapper.append(button);
+    wrapper.append(...buttons);
 
     return wrapper;
   }
@@ -332,24 +586,30 @@
     }
 
     const { title, company } = getJobDetails();
+    const jobId = getCurrentJobId();
 
-    if (!title || !company) {
+    if (!company || !jobId) {
       removeButtons();
-      setStatus(!title ? 'missing-title' : 'missing-company');
+      setStatus(!company ? 'missing-company' : 'missing-job-id');
       return;
     }
 
-    if (hasCurrentButton()) {
+    if (hasCurrentButtons(title, company, jobId)) {
       setStatus('ready');
       return;
     }
 
-    const button = createButton(title, company);
+    const buttons = [createCopyButton(company, jobId)];
+
+    if (title) {
+      buttons.unshift(createButton(title, company));
+    }
+
     const action = findJobAction();
 
     if (action) {
       const actionSlot = getActionSlot(action);
-      const wrapper = createActionWrapper(button);
+      const wrapper = createActionWrapper(buttons);
 
       actionSlot.insertAdjacentElement('afterend', wrapper);
       setStatus('ready');
@@ -359,7 +619,7 @@
     const header = findElement(headerSelectors);
 
     if (header) {
-      header.insertAdjacentElement('afterend', createActionWrapper(button));
+      header.insertAdjacentElement('afterend', createActionWrapper(buttons));
       setStatus('ready');
       return;
     }
