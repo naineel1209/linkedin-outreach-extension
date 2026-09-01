@@ -10,7 +10,8 @@
     "<all_urls>"
   ],
   "permissions": [
-    "clipboardWrite"
+    "clipboardWrite",
+    "offscreen"
   ],
   "content_scripts": [
     {

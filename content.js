@@ -19,6 +19,7 @@
   const COPY_BUTTON_ID = 'linkedin-copy-company-job-link-button';
   const STATUS_ATTRIBUTE = 'data-linkedin-peer-finder-status';
   const RESOLVE_APPLY_URL_MESSAGE = 'linkedin-peer-finder-resolve-apply-url';
+  const COPY_TEXT_MESSAGE = 'linkedin-peer-finder-copy-text';
   const RENDER_DELAY_MS = 150;
   const MAX_RENDER_DELAY_MS = 1000;
 
@@ -473,6 +474,103 @@
     return '';
   }
 
+  function decodeUrlValue(value) {
+    try {
+      return JSON.parse(`"${value}"`);
+    } catch {
+      return value.replace(/\\u0026/gi, '&').replace(/\\\//g, '/');
+    }
+  }
+
+  function isApplyUrlProperty(propertyName) {
+    return /(?:apply|application|linkout|redirect|destination|target).*(?:url|uri|link)|(?:url|uri|link).*(?:apply|application|linkout|redirect|destination|target)/i.test(propertyName);
+  }
+
+  function getExternalApplyUrlFromValue(value, propertyName = '', visited = new Set(), depth = 0) {
+    if (depth > 8 || value === null || value === undefined) {
+      return '';
+    }
+
+    if (typeof value === 'string') {
+      if (!isApplyUrlProperty(propertyName)) {
+        return '';
+      }
+
+      return getResolvableApplyUrl(decodeUrlValue(value));
+    }
+
+    if (typeof value !== 'object' || visited.has(value)) {
+      return '';
+    }
+
+    visited.add(value);
+
+    for (const [key, childValue] of Object.entries(value)) {
+      const externalUrl = getExternalApplyUrlFromValue(childValue, key, visited, depth + 1);
+
+      if (externalUrl) {
+        return externalUrl;
+      }
+    }
+
+    return '';
+  }
+
+  function getExternalApplyUrlFromJobData() {
+    const jobDataElements = document.querySelectorAll(
+      'script[type="application/json"], script[type="application/ld+json"], code'
+    );
+    const urlProperty = /["'](?:applyUrl|applyURL|externalApplyUrl|companyApplyUrl|applyLink|linkoutUrl)["']\s*[:=]\s*["']([^"']+)["']/gi;
+
+    for (const element of jobDataElements) {
+      const jobData = element.textContent || '';
+
+      try {
+        const externalUrl = getExternalApplyUrlFromValue(JSON.parse(jobData));
+
+        if (externalUrl) {
+          return externalUrl;
+        }
+      } catch {
+        // The page can contain non-JSON data in these elements.
+      }
+
+      let match;
+
+      while ((match = urlProperty.exec(jobData))) {
+        const externalUrl = getResolvableApplyUrl(decodeUrlValue(match[1]));
+
+        if (externalUrl) {
+          return externalUrl;
+        }
+      }
+    }
+
+    return '';
+  }
+
+  function getExternalApplyUrlFromReactData(applyAction) {
+    let element = applyAction;
+
+    for (let level = 0; element && level < 4; level += 1) {
+      for (const propertyName of Object.keys(element)) {
+        if (!propertyName.startsWith('__reactProps$')) {
+          continue;
+        }
+
+        const externalUrl = getExternalApplyUrlFromValue(element[propertyName]);
+
+        if (externalUrl) {
+          return externalUrl;
+        }
+      }
+
+      element = element.parentElement;
+    }
+
+    return '';
+  }
+
   function getCanonicalJobUrl(jobId) {
     return `https://www.linkedin.com/jobs/view/${encodeURIComponent(jobId)}/`;
   }
@@ -495,7 +593,32 @@
     });
   }
 
+  function copyWithExtensionClipboard(value) {
+    return new Promise((resolve, reject) => {
+      if (typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) {
+        reject(new Error('The extension background worker is unavailable.'));
+        return;
+      }
+
+      chrome.runtime.sendMessage({ type: COPY_TEXT_MESSAGE, value }, (response) => {
+        if (chrome.runtime.lastError || !response?.ok) {
+          reject(new Error('The extension clipboard is unavailable.'));
+          return;
+        }
+
+        resolve();
+      });
+    });
+  }
+
   async function copyText(value) {
+    try {
+      await copyWithExtensionClipboard(value);
+      return;
+    } catch {
+      // Use the page clipboard paths when the extension clipboard is unavailable.
+    }
+
     if (navigator.clipboard?.writeText) {
       try {
         await navigator.clipboard.writeText(value);
@@ -538,7 +661,9 @@
         if (isEasyApplyAction(applyAction)) {
           jobUrl = getCanonicalJobUrl(jobId);
         } else {
-          const externalApplyUrl = getExternalApplyUrl(applyAction);
+          const externalApplyUrl = getExternalApplyUrl(applyAction) ||
+            getExternalApplyUrlFromJobData() ||
+            getExternalApplyUrlFromReactData(applyAction);
 
           if (!externalApplyUrl) {
             throw new Error('No external application URL is available.');
@@ -549,7 +674,8 @@
 
         await copyText(`${company}\t${jobUrl}`);
         button.textContent = 'Copied';
-      } catch {
+      } catch (error) {
+        console.warn('[LinkedIn Peer Finder] Copy failed:', error.message);
         button.textContent = 'Copy failed';
       }
 
