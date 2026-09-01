@@ -1,0 +1,51 @@
+[data-linkedin-peer-finder-action] {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  margin: 0.25rem 0.625rem 0.25rem 0;
+  max-width: 100%;
+}
+
+#linkedin-peer-finder-button[data-linkedin-peer-finder-button] {
+  align-items: center;
+  appearance: none !important;
+  background: linear-gradient(135deg, #0a66c2, #004182) !important;
+  border: 1px solid transparent !important;
+  border-radius: 0.625rem !important;
+  box-sizing: border-box !important;
+  color: #ffffff !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  flex: 0 0 auto !important;
+  font-family: inherit !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  justify-content: center;
+  letter-spacing: 0.01em !important;
+  line-height: 1.25rem !important;
+  margin: 0 !important;
+  max-width: 100% !important;
+  min-height: 2.625rem !important;
+  padding: 0.625rem 1rem !important;
+  box-shadow: 0 0.25rem 0.75rem rgba(10, 102, 194, 0.22) !important;
+  text-align: center !important;
+  transition: background 160ms ease, box-shadow 160ms ease, transform 160ms ease !important;
+  white-space: nowrap !important;
+  width: auto !important;
+}
+
+#linkedin-peer-finder-button[data-linkedin-peer-finder-button]:hover {
+  background: linear-gradient(135deg, #004182, #00376b) !important;
+  box-shadow: 0 0.375rem 1rem rgba(10, 102, 194, 0.3) !important;
+  transform: translateY(-1px);
+}
+
+#linkedin-peer-finder-button[data-linkedin-peer-finder-button]:active {
+  box-shadow: 0 0.125rem 0.375rem rgba(10, 102, 194, 0.25) !important;
+  transform: translateY(0);
+}
+
+#linkedin-peer-finder-button[data-linkedin-peer-finder-button]:focus-visible {
+  outline: 3px solid #70b5f9;
+  outline-offset: 2px;
+}

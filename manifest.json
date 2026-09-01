@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "LinkedIn Peer Finder",
+  "version": "1.0.9",
+  "description": "Find LinkedIn people who share a job title and company.",
+  "content_scripts": [
+    {
+      "matches": [
+        "*://linkedin.com/jobs/view/*",
+        "*://*.linkedin.com/jobs/view/*",
+        "*://linkedin.com/jobs/search-results/*",
+        "*://*.linkedin.com/jobs/search-results/*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://linkedin.com/*",
+        "*://*.linkedin.com/*"
+      ],
+      "js": ["profile-tools.js"],
+      "css": ["profile-tools.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

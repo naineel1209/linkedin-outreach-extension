@@ -1,0 +1,45 @@
+[data-linkedin-copy-profile-url-action] {
+  align-items: center !important;
+  display: contents !important;
+  flex: 0 0 auto !important;
+  margin: 0 !important;
+}
+
+[data-linkedin-copy-profile-url-button] {
+  appearance: none !important;
+  background: rgba(10, 102, 194, 0.08) !important;
+  border: 1px solid rgba(10, 102, 194, 0.58) !important;
+  border-radius: 0.5rem !important;
+  box-sizing: border-box !important;
+  color: #0a66c2 !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  flex: 0 0 auto !important;
+  font-family: inherit !important;
+  font-size: 0.8125rem !important;
+  font-weight: 600 !important;
+  justify-content: center !important;
+  letter-spacing: 0.01em !important;
+  line-height: 1rem !important;
+  margin: 0 !important;
+  min-height: 2.125rem !important;
+  padding: 0.5rem 0.6875rem !important;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease !important;
+  white-space: nowrap !important;
+}
+
+[data-linkedin-copy-profile-url-button]:hover {
+  background: #0a66c2 !important;
+  border-color: #0a66c2 !important;
+  color: #ffffff !important;
+  transform: translateY(-1px);
+}
+
+[data-linkedin-copy-profile-url-button]:active {
+  transform: translateY(0);
+}
+
+[data-linkedin-copy-profile-url-button]:focus-visible {
+  outline: 3px solid #70b5f9;
+  outline-offset: 2px;
+}
