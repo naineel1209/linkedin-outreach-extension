@@ -306,13 +306,14 @@
     const peerButton = getSingleButton(BUTTON_SELECTOR, BUTTON_ID);
     const copyButton = getSingleButton(COPY_BUTTON_SELECTOR, COPY_BUTTON_ID);
     const needsPeerButton = Boolean(title && company);
-    const needsCopyButton = Boolean(company && jobId);
+    const needsCopyButton = Boolean(title && company && jobId);
     const peerMatches = !needsPeerButton || (
       peerButton?.dataset.peerFinderTitle === title &&
       peerButton?.dataset.peerFinderCompany === company
     );
     const copyMatches = !needsCopyButton || (
       copyButton?.dataset.copyCompany === company &&
+      copyButton?.dataset.copyTitle === title &&
       copyButton?.dataset.copyJobId === jobId
     );
 
@@ -664,7 +665,7 @@
     textArea.remove();
   }
 
-  function createCopyButton(company, jobId) {
+  function createCopyButton(title, company, jobId) {
     const button = document.createElement('button');
     const originalText = 'Copy Company Name - Job link';
 
@@ -695,7 +696,7 @@
           }
         }
 
-        await copyText(`${company}\t${jobUrl}`);
+        await copyText(`${company}\t${title}\t${jobUrl}`);
         button.textContent = 'Copied';
       } catch (error) {
         console.warn('[LinkedIn Peer Finder] Copy failed:', error.message);
@@ -711,6 +712,7 @@
     button.id = COPY_BUTTON_ID;
     button.setAttribute(COPY_BUTTON_ATTRIBUTE, '');
     button.dataset.copyCompany = company;
+    button.dataset.copyTitle = title;
     button.dataset.copyJobId = jobId;
     button.textContent = originalText;
     button.setAttribute('aria-label', 'Copy company name and job link');
@@ -758,9 +760,9 @@
     const { title, company } = getJobDetails();
     const jobId = getCurrentJobId();
 
-    if (!company || !jobId) {
+    if (!title || !company || !jobId) {
       removeButtons();
-      setStatus(!company ? 'missing-company' : 'missing-job-id');
+      setStatus(!title ? 'missing-title' : (!company ? 'missing-company' : 'missing-job-id'));
       return;
     }
 
@@ -769,10 +771,11 @@
       return;
     }
 
-    const buttons = [createCopyButton(company, jobId)];
+    const buttons = [];
 
     if (title) {
       buttons.unshift(createButton(title, company));
+      buttons.push(createCopyButton(title, company, jobId));
     }
 
     const action = findJobAction();

@@ -6,7 +6,7 @@ The extension also supports a selected job in LinkedIn search results.
 
 The extension adds **Copy Company Name - Job link** beside the job actions.
 
-This button copies the company name and job link as tab-separated values.
+This button copies the company name, job title, and job link as tab-separated values.
 
 For Easy Apply jobs, it copies the canonical LinkedIn job URL.
 
@@ -50,7 +50,9 @@ Chrome opens a new LinkedIn People search tab.
 
 Google Sheets places the company name in one column.
 
-Google Sheets places the job link in the next column.
+Google Sheets places the job title in the next column.
+
+Google Sheets places the job link in the third column.
 
 The button shows **Copied** after a successful copy operation.
 
