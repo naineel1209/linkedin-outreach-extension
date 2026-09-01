@@ -19,6 +19,7 @@
   const COPY_BUTTON_ID = 'linkedin-copy-company-job-link-button';
   const STATUS_ATTRIBUTE = 'data-linkedin-peer-finder-status';
   const RESOLVE_APPLY_URL_MESSAGE = 'linkedin-peer-finder-resolve-apply-url';
+  const LOOKUP_APPLY_URL_MESSAGE = 'linkedin-peer-finder-lookup-apply-url';
   const COPY_TEXT_MESSAGE = 'linkedin-peer-finder-copy-text';
   const RENDER_DELAY_MS = 150;
   const MAX_RENDER_DELAY_MS = 1000;
@@ -593,6 +594,24 @@
     });
   }
 
+  function lookupApplyUrl(jobId) {
+    return new Promise((resolve, reject) => {
+      if (typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) {
+        reject(new Error('The extension background worker is unavailable.'));
+        return;
+      }
+
+      chrome.runtime.sendMessage({ type: LOOKUP_APPLY_URL_MESSAGE, jobId }, (response) => {
+        if (chrome.runtime.lastError || !response?.ok || !response.kind) {
+          reject(new Error('LinkedIn did not provide an application URL.'));
+          return;
+        }
+
+        resolve(response);
+      });
+    });
+  }
+
   function copyWithExtensionClipboard(value) {
     return new Promise((resolve, reject) => {
       if (typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) {
@@ -666,10 +685,14 @@
             getExternalApplyUrlFromReactData(applyAction);
 
           if (!externalApplyUrl) {
-            throw new Error('No external application URL is available.');
-          }
+            const lookupResult = await lookupApplyUrl(jobId);
 
-          jobUrl = await resolveExternalApplyUrl(externalApplyUrl);
+            jobUrl = lookupResult.kind === 'linkedin'
+              ? getCanonicalJobUrl(jobId)
+              : lookupResult.url;
+          } else {
+            jobUrl = await resolveExternalApplyUrl(externalApplyUrl);
+          }
         }
 
         await copyText(`${company}\t${jobUrl}`);

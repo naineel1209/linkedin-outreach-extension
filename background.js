@@ -2,6 +2,7 @@
   'use strict';
 
   const RESOLVE_APPLY_URL_MESSAGE = 'linkedin-peer-finder-resolve-apply-url';
+  const LOOKUP_APPLY_URL_MESSAGE = 'linkedin-peer-finder-lookup-apply-url';
   const COPY_TEXT_MESSAGE = 'linkedin-peer-finder-copy-text';
   const OFFSCREEN_DOCUMENT_PATH = 'offscreen.html';
   let creatingOffscreenDocument;
@@ -35,6 +36,48 @@
     }
 
     return finalUrl;
+  }
+
+  function getHtmlAttribute(element, attributeName) {
+    const attribute = new RegExp(`\\s${attributeName}=["']([^"']*)["']`, 'i').exec(element);
+
+    return attribute?.[1].replace(/&amp;/gi, '&') || '';
+  }
+
+  async function lookupApplyUrl(jobId) {
+    if (!/^\d+$/.test(jobId)) {
+      throw new Error('The job ID is invalid.');
+    }
+
+    const response = await fetch(`https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/${jobId}`, {
+      cache: 'no-store',
+      credentials: 'omit'
+    });
+
+    if (!response.ok) {
+      throw new Error('LinkedIn job data is unavailable.');
+    }
+
+    const jobPage = await response.text();
+    const actions = jobPage.match(/<(?:a|button)\b[^>]*>/gi) || [];
+
+    for (const action of actions) {
+      const controlName = getHtmlAttribute(action, 'data-tracking-control-name');
+
+      if (/apply-link-onsite/i.test(controlName)) {
+        return { kind: 'linkedin' };
+      }
+
+      if (/apply-link-(?:offsite|external)/i.test(controlName)) {
+        const applyUrl = getHttpUrl(getHtmlAttribute(action, 'href'));
+
+        if (applyUrl) {
+          return { kind: 'external', url: await resolveApplyUrl(applyUrl) };
+        }
+      }
+    }
+
+    throw new Error('LinkedIn job data has no application URL.');
   }
 
   async function hasOffscreenDocument() {
@@ -93,6 +136,14 @@
     if (message?.type === COPY_TEXT_MESSAGE && sender.tab) {
       copyText(message.value)
         .then(() => sendResponse({ ok: true }))
+        .catch(() => sendResponse({ ok: false }));
+
+      return true;
+    }
+
+    if (message?.type === LOOKUP_APPLY_URL_MESSAGE && sender.tab) {
+      lookupApplyUrl(message.jobId)
+        .then((result) => sendResponse({ ok: true, ...result }))
         .catch(() => sendResponse({ ok: false }));
 
       return true;
