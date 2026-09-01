@@ -9,6 +9,9 @@
   "host_permissions": [
     "<all_urls>"
   ],
+  "permissions": [
+    "clipboardWrite"
+  ],
   "content_scripts": [
     {
       "matches": [

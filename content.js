@@ -252,11 +252,25 @@
   }
 
   function findApplyAction() {
-    return findAction('Apply', [
+    const preferredSelectors = [
       'button.jobs-apply-button',
       'button[data-control-name*="jobdetails_topcard_inapply"]',
-      'a[role="button"][data-control-name*="jobdetails_topcard_inapply"]'
+      'a[role="button"][data-control-name*="jobdetails_topcard_inapply"]',
+      'button[data-control-name*="jobdetails_topcard_apply"]',
+      'a[role="button"][data-control-name*="jobdetails_topcard_apply"]'
+    ];
+    const preferredActions = preferredSelectors.flatMap((selector) => [
+      ...document.querySelectorAll(selector)
     ]);
+    const labelledAction = preferredActions.find((element) => {
+      const label = normalizeText(element.getAttribute('aria-label'));
+      const text = normalizeText(element.textContent);
+
+      return /^apply\b/i.test(label) || /^easy\s+apply\b/i.test(label) ||
+        /^apply\b/i.test(text) || /^easy\s+apply\b/i.test(text);
+    });
+
+    return labelledAction || preferredActions[0] || findAction('Apply', preferredSelectors);
   }
 
   function findJobAction() {
@@ -339,8 +353,10 @@
 
     const label = normalizeText(action.getAttribute('aria-label'));
     const text = normalizeText(action.textContent);
+    const controlName = normalizeText(action.getAttribute('data-control-name'));
 
-    return /\beasy\s+apply\b/i.test(label) || /\beasy\s+apply\b/i.test(text);
+    return /\beasy\s+apply\b/i.test(label) || /\beasy\s+apply\b/i.test(text) ||
+      /\binapply\b/i.test(controlName);
   }
 
   function getExternalUrl(value) {
@@ -412,7 +428,7 @@
     const values = [];
 
     for (const attribute of [...element.attributes]) {
-      if (/^(href|data-(?:apply-)?url|data-(?:job-apply|redirect|target|external)-url|data-destination)$/i.test(attribute.name)) {
+      if (attribute.name === 'href' || /(?:url|uri|linkout)$/i.test(attribute.name)) {
         values.push(attribute.value);
       }
     }
@@ -430,13 +446,14 @@
     }
 
     document.querySelectorAll(
-      'a[href], [data-apply-url], [data-job-apply-url], [data-redirect-url], [data-target-url], [data-external-url]'
+      'a[href], [data-apply-url], [data-job-apply-url], [data-redirect-url], [data-target-url], [data-external-url], [data-linkout-url]'
     ).forEach((candidate) => {
       const label = normalizeText(candidate.getAttribute('aria-label'));
       const text = normalizeText(candidate.textContent);
       const hasApplyUrl = candidate.hasAttribute('data-apply-url') ||
         candidate.hasAttribute('data-job-apply-url') ||
-        candidate.hasAttribute('data-external-url');
+        candidate.hasAttribute('data-external-url') ||
+        candidate.hasAttribute('data-linkout-url');
 
       if (hasApplyUrl || /\b(apply|application|continue)\b/i.test(`${label} ${text}`)) {
         candidates.push(candidate);
@@ -480,8 +497,12 @@
 
   async function copyText(value) {
     if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(value);
-      return;
+      try {
+        await navigator.clipboard.writeText(value);
+        return;
+      } catch {
+        // Use the legacy copy path when LinkedIn blocks the Clipboard API.
+      }
     }
 
     const textArea = document.createElement('textarea');
