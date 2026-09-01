@@ -214,13 +214,25 @@
     return '';
   }
 
+  function isJobTitle(value) {
+    return Boolean(value) && !/^(?:full[- ]time|part[- ]time|contract|temporary|internship|volunteer|remote|hybrid|on[- ]site|onsite)$/i.test(value);
+  }
+
   function getJobDetails() {
-    const title = firstText(titleSelectors) || normalizeText(document.querySelector('h1')?.textContent);
-    const company = firstText(companySelectors);
     const structuredDetails = getStructuredJobDetails();
+    const titleCandidates = [
+      firstText(titleSelectors),
+      normalizeText(document.querySelector('h1')?.textContent),
+      structuredDetails.title,
+      getTitleFromCurrentJobLink(),
+      getTitleFromDocumentTitle(),
+      getTitleFromJobSummary()
+    ];
+    const title = titleCandidates.find(isJobTitle) || '';
+    const company = firstText(companySelectors);
 
     return {
-      title: title || structuredDetails.title || getTitleFromCurrentJobLink() || getTitleFromDocumentTitle() || getTitleFromJobSummary(),
+      title,
       company: company || structuredDetails.company || getCompanyFromDocumentTitle()
     };
   }

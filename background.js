@@ -17,8 +17,32 @@
     }
   }
 
-  async function resolveApplyUrl(value) {
+  function getExternalDestination(value) {
     const url = getHttpUrl(value);
+
+    if (!url) {
+      return '';
+    }
+
+    const parsedUrl = new URL(url);
+
+    if (!/(^|\.)linkedin\.com$/i.test(parsedUrl.hostname)) {
+      return url;
+    }
+
+    for (const parameter of ['url', 'redirect', 'redirectUrl', 'targetUrl', 'destination']) {
+      const destination = getExternalDestination(parsedUrl.searchParams.get(parameter));
+
+      if (destination) {
+        return destination;
+      }
+    }
+
+    return '';
+  }
+
+  async function resolveApplyUrl(value) {
+    const url = getExternalDestination(value) || getHttpUrl(value);
 
     if (!url) {
       throw new Error('The application URL is invalid.');
@@ -29,7 +53,7 @@
       credentials: 'omit',
       redirect: 'follow'
     });
-    const finalUrl = getHttpUrl(response.url);
+    const finalUrl = getExternalDestination(response.url) || getHttpUrl(response.url);
 
     if (!finalUrl) {
       throw new Error('The application URL has no valid destination.');
