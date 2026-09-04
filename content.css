@@ -9,6 +9,7 @@
 }
 
 #linkedin-peer-finder-button[data-linkedin-peer-finder-button],
+#linkedin-google-peer-finder-button[data-linkedin-google-peer-finder-button],
 #linkedin-copy-company-job-link-button[data-linkedin-copy-company-job-link-button] {
   align-items: center;
   appearance: none !important;
@@ -38,6 +39,7 @@
 }
 
 #linkedin-peer-finder-button[data-linkedin-peer-finder-button]:hover,
+#linkedin-google-peer-finder-button[data-linkedin-google-peer-finder-button]:hover,
 #linkedin-copy-company-job-link-button[data-linkedin-copy-company-job-link-button]:hover {
   background: linear-gradient(135deg, #004182, #00376b) !important;
   box-shadow: 0 0.375rem 1rem rgba(10, 102, 194, 0.3) !important;
@@ -45,12 +47,14 @@
 }
 
 #linkedin-peer-finder-button[data-linkedin-peer-finder-button]:active,
+#linkedin-google-peer-finder-button[data-linkedin-google-peer-finder-button]:active,
 #linkedin-copy-company-job-link-button[data-linkedin-copy-company-job-link-button]:active {
   box-shadow: 0 0.125rem 0.375rem rgba(10, 102, 194, 0.25) !important;
   transform: translateY(0);
 }
 
 #linkedin-peer-finder-button[data-linkedin-peer-finder-button]:focus-visible,
+#linkedin-google-peer-finder-button[data-linkedin-google-peer-finder-button]:focus-visible,
 #linkedin-copy-company-job-link-button[data-linkedin-copy-company-job-link-button]:focus-visible {
   outline: 3px solid #70b5f9;
   outline-offset: 2px;

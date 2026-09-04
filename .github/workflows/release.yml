@@ -1,0 +1,38 @@
+name: Create Extension Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  package-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install CRX tool
+        run: npm install --global crx
+
+      - name: Create extension packages
+        run: |
+          chmod +x .github/scripts/create-crx.sh
+          .github/scripts/create-crx.sh
+        env:
+          CHROME_CRX_SIGNING_KEY: ${{ secrets.CHROME_CRX_SIGNING_KEY }}
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            packages/linkedin-outreach-extension.crx
+            packages/linkedin-outreach-extension.zip

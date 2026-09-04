@@ -11,11 +11,14 @@
 
   const BUTTON_ATTRIBUTE = 'data-linkedin-peer-finder-button';
   const BUTTON_SELECTOR = `[${BUTTON_ATTRIBUTE}]`;
+  const GOOGLE_BUTTON_ATTRIBUTE = 'data-linkedin-google-peer-finder-button';
+  const GOOGLE_BUTTON_SELECTOR = `[${GOOGLE_BUTTON_ATTRIBUTE}]`;
   const COPY_BUTTON_ATTRIBUTE = 'data-linkedin-copy-company-job-link-button';
   const COPY_BUTTON_SELECTOR = `[${COPY_BUTTON_ATTRIBUTE}]`;
   const WRAPPER_ATTRIBUTE = 'data-linkedin-peer-finder-action';
   const WRAPPER_SELECTOR = `[${WRAPPER_ATTRIBUTE}]`;
   const BUTTON_ID = 'linkedin-peer-finder-button';
+  const GOOGLE_BUTTON_ID = 'linkedin-google-peer-finder-button';
   const COPY_BUTTON_ID = 'linkedin-copy-company-job-link-button';
   const STATUS_ATTRIBUTE = 'data-linkedin-peer-finder-status';
   const RESOLVE_APPLY_URL_MESSAGE = 'linkedin-peer-finder-resolve-apply-url';
@@ -298,6 +301,7 @@
   function removeButtons() {
     document.querySelectorAll(WRAPPER_SELECTOR).forEach((wrapper) => wrapper.remove());
     document.querySelectorAll(BUTTON_SELECTOR).forEach((button) => button.remove());
+    document.querySelectorAll(GOOGLE_BUTTON_SELECTOR).forEach((button) => button.remove());
     document.querySelectorAll(COPY_BUTTON_SELECTOR).forEach((button) => button.remove());
   }
 
@@ -316,12 +320,18 @@
 
   function hasCurrentButtons(title, company, jobId) {
     const peerButton = getSingleButton(BUTTON_SELECTOR, BUTTON_ID);
+    const googlePeerButton = getSingleButton(GOOGLE_BUTTON_SELECTOR, GOOGLE_BUTTON_ID);
     const copyButton = getSingleButton(COPY_BUTTON_SELECTOR, COPY_BUTTON_ID);
     const needsPeerButton = Boolean(title && company);
+    const needsGooglePeerButton = Boolean(title && company);
     const needsCopyButton = Boolean(title && company && jobId);
     const peerMatches = !needsPeerButton || (
       peerButton?.dataset.peerFinderTitle === title &&
       peerButton?.dataset.peerFinderCompany === company
+    );
+    const googlePeerMatches = !needsGooglePeerButton || (
+      googlePeerButton?.dataset.googlePeerFinderTitle === title &&
+      googlePeerButton?.dataset.googlePeerFinderCompany === company
     );
     const copyMatches = !needsCopyButton || (
       copyButton?.dataset.copyCompany === company &&
@@ -331,8 +341,10 @@
 
     if (
       peerMatches &&
+      googlePeerMatches &&
       copyMatches &&
       Boolean(peerButton) === needsPeerButton &&
+      Boolean(googlePeerButton) === needsGooglePeerButton &&
       Boolean(copyButton) === needsCopyButton
     ) {
       return true;
@@ -354,6 +366,26 @@
     button.dataset.peerFinderCompany = company;
     button.textContent = `Find peers at ${company}`;
     button.setAttribute('aria-label', `Find peers at ${company}`);
+    button.addEventListener('click', () => {
+      window.open(searchUrl, '_blank', 'noopener');
+    });
+
+    return button;
+  }
+
+  function createGoogleButton(title, company) {
+    const button = document.createElement('button');
+    const query = encodeURIComponent(`site:linkedin.com/in/ \"${title}\" \"${company}\"`);
+    const searchUrl = `https://www.google.com/search?q=${query}`;
+
+    button.type = 'button';
+    button.id = GOOGLE_BUTTON_ID;
+    button.setAttribute(GOOGLE_BUTTON_ATTRIBUTE, '');
+    button.dataset.googlePeerFinderTitle = title;
+    button.dataset.googlePeerFinderCompany = company;
+    button.textContent = 'Find peers on Google';
+    button.setAttribute('aria-label', `Find peers on Google at ${company}`);
+    button.setAttribute('title', 'Search Google for matching public LinkedIn profiles');
     button.addEventListener('click', () => {
       window.open(searchUrl, '_blank', 'noopener');
     });
@@ -787,6 +819,7 @@
 
     if (title) {
       buttons.unshift(createButton(title, company));
+      buttons.push(createGoogleButton(title, company));
       buttons.push(createCopyButton(title, company, jobId));
     }
 

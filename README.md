@@ -1,6 +1,26 @@
 # LinkedIn Peer Finder
 
-LinkedIn Peer Finder adds a People search button to LinkedIn job-detail pages.
+LinkedIn Peer Finder adds LinkedIn and Google peer-search buttons to LinkedIn job-detail pages.
+
+## Install a package
+
+The `packages/linkedin-outreach-extension.zip` file contains the extension source.
+
+1. Extract the ZIP file to an empty folder.
+2. Open `chrome://extensions` in Google Chrome.
+3. Turn on **Developer mode**.
+4. Select **Load unpacked**.
+5. Select the extracted folder.
+
+The `packages/linkedin-outreach-extension.crx` file has a signing key.
+
+Google Chrome blocks direct CRX installation outside Chrome Web Store or managed enterprise policies.
+
+Use the ZIP package for a local Chrome installation.
+
+Keep the same signing key for every future CRX release.
+
+Set GitHub secret `CHROME_CRX_SIGNING_KEY` to the complete PEM key content.
 
 The extension also supports a selected job in LinkedIn search results.
 
@@ -12,7 +32,9 @@ For Easy Apply jobs, it copies the canonical LinkedIn job URL.
 
 For external application jobs, it copies the final external application URL.
 
-The extension searches for the current job title and company name.
+The LinkedIn button searches for the current job title and company name.
+
+The Google button searches public LinkedIn profile pages with the same title and company name.
 
 The extension does not send messages or connection requests.
 
@@ -41,6 +63,12 @@ It copies a LinkedIn People search URL only when LinkedIn hides that profile URL
 8. Select **Find peers at [Company Name]**.
 
 Chrome opens a new LinkedIn People search tab.
+
+9. Select **Find peers on Google**.
+
+Chrome opens a Google search tab.
+
+The Google search uses `site:linkedin.com/in/` with the job title and company name.
 
 ## Copy a company name and job link
 
@@ -88,6 +116,6 @@ The job buttons appear beside **Save** when Apply is unavailable.
 
 The job buttons appear below the job header when neither action exists.
 
-The People search button needs both a job title and a company name.
+Both peer-search buttons need a job title and a company name.
 
 The copy button needs a company name and a selected job.

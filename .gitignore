@@ -1,0 +1,5 @@
+# Local CRX signing keys must not enter version control.
+key.pem
+
+# Generated release packages.
+packages/
