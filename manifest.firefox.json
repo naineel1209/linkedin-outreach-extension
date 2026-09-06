@@ -4,15 +4,22 @@
   "version": "1.3.0",
   "description": "Find people with LinkedIn or Google searches by job title and company.",
   "background": {
-    "service_worker": "background.chrome.js"
+    "scripts": ["background.common.js", "background.firefox.js"]
   },
   "host_permissions": [
     "<all_urls>"
   ],
   "permissions": [
-    "clipboardWrite",
-    "offscreen"
+    "clipboardWrite"
   ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "linkedin-peer-finder@naineel.dev",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
+    }
+  },
   "content_scripts": [
     {
       "matches": [

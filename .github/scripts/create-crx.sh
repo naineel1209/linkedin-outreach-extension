@@ -55,7 +55,13 @@ echo "Preparing extension source..."
 tar -C "${SOURCE_DIR}" \
   --exclude='./.git' \
   --exclude='./.github' \
+  --exclude='./.agents' \
+  --exclude='./.agents/*' \
+  --exclude='./.codex' \
+  --exclude='./.codex/*' \
   --exclude='./packages' \
+  --exclude='./manifest.firefox.json' \
+  --exclude='./background.firefox.js' \
   --exclude='./key.pem' \
   --exclude='./.gitignore' \
   -cf - . | tar -C "${STAGING_DIR}" -xf -

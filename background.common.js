@@ -4,8 +4,6 @@
   const RESOLVE_APPLY_URL_MESSAGE = 'linkedin-peer-finder-resolve-apply-url';
   const LOOKUP_APPLY_URL_MESSAGE = 'linkedin-peer-finder-lookup-apply-url';
   const COPY_TEXT_MESSAGE = 'linkedin-peer-finder-copy-text';
-  const OFFSCREEN_DOCUMENT_PATH = 'offscreen.html';
-  let creatingOffscreenDocument;
 
   function getHttpUrl(value) {
     try {
@@ -104,83 +102,35 @@
     throw new Error('LinkedIn job data has no application URL.');
   }
 
-  async function hasOffscreenDocument() {
-    if (!chrome.runtime.getContexts) {
-      return false;
-    }
+  function register(copyText) {
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+      if (message?.type === COPY_TEXT_MESSAGE && sender.tab) {
+        copyText(message.value)
+          .then(() => sendResponse({ ok: true }))
+          .catch(() => sendResponse({ ok: false }));
 
-    const offscreenUrl = chrome.runtime.getURL(OFFSCREEN_DOCUMENT_PATH);
-    const contexts = await chrome.runtime.getContexts({
-      contextTypes: ['OFFSCREEN_DOCUMENT'],
-      documentUrls: [offscreenUrl]
-    });
-
-    return contexts.length > 0;
-  }
-
-  async function ensureOffscreenDocument() {
-    if (await hasOffscreenDocument()) {
-      return;
-    }
-
-    if (!creatingOffscreenDocument) {
-      creatingOffscreenDocument = chrome.offscreen.createDocument({
-        url: OFFSCREEN_DOCUMENT_PATH,
-        reasons: ['CLIPBOARD'],
-        justification: 'Copy company names and job links after redirect resolution.'
-      });
-      try {
-        await creatingOffscreenDocument;
-      } finally {
-        creatingOffscreenDocument = undefined;
+        return true;
       }
 
-      return;
-    }
+      if (message?.type === LOOKUP_APPLY_URL_MESSAGE && sender.tab) {
+        lookupApplyUrl(message.jobId)
+          .then((result) => sendResponse({ ok: true, ...result }))
+          .catch(() => sendResponse({ ok: false }));
 
-    await creatingOffscreenDocument;
-  }
+        return true;
+      }
 
-  async function copyText(value) {
-    await ensureOffscreenDocument();
+      if (message?.type !== RESOLVE_APPLY_URL_MESSAGE || !sender.tab) {
+        return false;
+      }
 
-    return new Promise((resolve, reject) => {
-      chrome.runtime.sendMessage({ type: COPY_TEXT_MESSAGE, value, target: 'offscreen' }, (response) => {
-        if (chrome.runtime.lastError || !response?.ok) {
-          reject(new Error('The extension document could not copy the text.'));
-          return;
-        }
+      resolveApplyUrl(message.url)
+        .then((url) => sendResponse({ ok: true, url }))
+        .catch(() => sendResponse({ ok: false }));
 
-        resolve();
-      });
+      return true;
     });
   }
 
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message?.type === COPY_TEXT_MESSAGE && sender.tab) {
-      copyText(message.value)
-        .then(() => sendResponse({ ok: true }))
-        .catch(() => sendResponse({ ok: false }));
-
-      return true;
-    }
-
-    if (message?.type === LOOKUP_APPLY_URL_MESSAGE && sender.tab) {
-      lookupApplyUrl(message.jobId)
-        .then((result) => sendResponse({ ok: true, ...result }))
-        .catch(() => sendResponse({ ok: false }));
-
-      return true;
-    }
-
-    if (message?.type !== RESOLVE_APPLY_URL_MESSAGE || !sender.tab) {
-      return false;
-    }
-
-    resolveApplyUrl(message.url)
-      .then((url) => sendResponse({ ok: true, url }))
-      .catch(() => sendResponse({ ok: false }));
-
-    return true;
-  });
+  globalThis.linkedinPeerFinderBackground = { register };
 })();

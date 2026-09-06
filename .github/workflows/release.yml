@@ -20,15 +20,32 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Install CRX tool
-        run: npm install --global crx
+      - name: Install package tools
+        run: npm install --global crx web-ext
 
       - name: Create extension packages
         run: |
           chmod +x .github/scripts/create-crx.sh
+          chmod +x .github/scripts/create-firefox-package.sh
           .github/scripts/create-crx.sh
+          .github/scripts/create-firefox-package.sh
         env:
           CHROME_CRX_SIGNING_KEY: ${{ secrets.CHROME_CRX_SIGNING_KEY }}
+
+      - name: Validate Firefox extension
+        run: web-ext lint --source-dir packages/firefox-source
+
+      - name: Sign Firefox extension
+        run: |
+          web-ext sign \
+            --channel listed \
+            --source-dir packages/firefox-source \
+            --artifacts-dir packages \
+            --api-key "$AMO_JWT_ISSUER" \
+            --api-secret "$AMO_JWT_SECRET"
+        env:
+          AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
+          AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
@@ -36,3 +53,5 @@ jobs:
           files: |
             packages/linkedin-outreach-extension.crx
             packages/linkedin-outreach-extension.zip
+            packages/linkedin-outreach-extension-firefox.zip
+            packages/*.xpi

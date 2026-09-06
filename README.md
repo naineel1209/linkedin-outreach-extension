@@ -4,7 +4,7 @@ LinkedIn Peer Finder adds LinkedIn and Google peer-search buttons to LinkedIn jo
 
 ## Install a package
 
-The `packages/linkedin-outreach-extension.zip` file contains the extension source.
+The `packages/linkedin-outreach-extension.zip` file contains the Chrome extension source.
 
 1. Extract the ZIP file to an empty folder.
 2. Open `chrome://extensions` in Google Chrome.
@@ -19,6 +19,22 @@ Google Chrome blocks direct CRX installation outside Chrome Web Store or managed
 Use the ZIP package for a local Chrome installation.
 
 Keep the same signing key for every future CRX release.
+
+The `packages/linkedin-outreach-extension-firefox.zip` file supports Firefox development loading.
+
+Extract this ZIP file to an empty folder.
+
+Open `about:debugging#/runtime/this-firefox` in Firefox.
+
+Select **Load Temporary Add-on**.
+
+Select the extracted `manifest.json` file.
+
+Firefox removes a temporary add-on when Firefox closes.
+
+The release workflow uploads a signed `.xpi` file after Mozilla Add-ons accepts the submission.
+
+Set GitHub secrets `AMO_JWT_ISSUER` and `AMO_JWT_SECRET` for Mozilla signing.
 
 Set GitHub secret `CHROME_CRX_SIGNING_KEY` to the complete PEM key content.
 
@@ -69,6 +85,24 @@ Chrome opens a new LinkedIn People search tab.
 Chrome opens a Google search tab.
 
 The Google search uses `site:linkedin.com/in/` with the job title and company name.
+
+## Start the extension in Firefox
+
+1. Extract `packages/linkedin-outreach-extension-firefox.zip` to an empty folder.
+2. Open `about:debugging#/runtime/this-firefox` in Firefox.
+3. Select **Load Temporary Add-on**.
+4. Select the extracted `manifest.json` file.
+5. Open a LinkedIn job-detail page.
+6. Select **Find peers at [Company Name]**.
+
+## Publish on Firefox Add-ons
+
+1. Create Mozilla Add-ons API credentials for the account that owns the public listing.
+2. Add the API issuer value as GitHub secret `AMO_JWT_ISSUER`.
+3. Add the API secret value as GitHub secret `AMO_JWT_SECRET`.
+4. Create and push a version tag, such as `v1.3.0`.
+5. The release workflow validates and submits the Firefox package as a listed Mozilla Add-ons release.
+6. Mozilla reviews the first public submission before users can install it.
 
 ## Copy a company name and job link
 
