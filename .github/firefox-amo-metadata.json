@@ -1,4 +1,7 @@
 {
+  "categories": [
+    "productivity"
+  ],
   "version": {
     "license": "MIT"
   }
