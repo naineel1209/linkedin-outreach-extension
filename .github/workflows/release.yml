@@ -41,6 +41,7 @@ jobs:
             --channel listed \
             --source-dir packages/firefox-source \
             --artifacts-dir packages \
+            --amo-metadata .github/firefox-amo-metadata.json \
             --api-key "$AMO_JWT_ISSUER" \
             --api-secret "$AMO_JWT_SECRET"
         env:
