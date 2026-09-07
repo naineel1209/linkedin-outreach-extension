@@ -38,7 +38,7 @@ jobs:
       - name: Sign Firefox extension
         run: |
           web-ext sign \
-            --channel listed \
+            --channel unlisted \
             --source-dir packages/firefox-source \
             --artifacts-dir packages \
             --amo-metadata .github/firefox-amo-metadata.json \
